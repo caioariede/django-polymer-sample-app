@@ -1,0 +1,26 @@
+{
+  "name": "djogging",
+  "version": "0.0.0",
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.2.0",
+
+    "paper-drawer-panel": "PolymerElements/paper-drawer-panel",
+    "paper-header-panel": "PolymerElements/paper-header-panel",
+    "paper-item": "PolymerElements/paper-item",
+    "paper-material": "PolymerElements/paper-material",
+    "paper-menu": "PolymerElements/paper-menu",
+    "paper-toolbar": "PolymerElements/paper-toolbar",
+    "paper-dialog": "PolymerElements/paper-dialog",
+    "paper-input": "PolymerElements/paper-input",
+    "paper-button": "PolymerElements/paper-button",
+    "paper-icon-button": "PolymerElements/paper-icon-button",
+    "paper-card": "PolymerElements/paper-card",
+
+    "iron-icons": "PolymerElements/iron-icons",
+    "iron-form": "PolymerElements/iron-form",
+    "iron-ajax": "PolymerElements/iron-ajax",
+    "iron-flex-layout": "PolymerElements/iron-flex-layout",
+
+    "paper-date-picker": "bendavis78/paper-date-picker"
+  }
+}

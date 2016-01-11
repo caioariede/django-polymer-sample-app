@@ -1,0 +1,99 @@
+<link rel="import" href="signup-dialog.html">
+
+<dom-module id="login-dialog">
+    <template>
+        <signup-dialog id="signupDialogM" csrfToken="{{csrfToken}}"></signup-dialog>
+
+        <paper-dialog id="loginDialog">
+            <h2>Sign In</h2>
+
+            <form is="iron-form" id="loginForm" method="post" action="/rest-auth/login/">
+                <input type=hidden name=csrfmiddlewaretoken value="{{ csrfToken }}">
+                <paper-input name="username" label="Username" required></paper-input>
+                <paper-input name="password" label="Password" required type="password"></paper-input>
+                <br>
+                <paper-button raised class=submit>Login</paper-button>
+                <paper-button raised class=signup>Create an account</paper-button>
+                <button style="display:none"></button>
+            </form>
+        </paper-dialog>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'login-dialog',
+
+            properties: {
+                csrfToken: String,
+
+                authToken: {
+                    type: String,
+                    value: Cookies.get('auth-token'),
+                    observer: 'changeToken'
+                },
+
+                user: {
+                    type: Object,
+                    value: {
+                        isLogged: false,
+                        username: null
+                    }
+                }
+            },
+
+            changeToken: function(token) {
+                var self = this;
+
+                Cookies.set('auth-token', token, { expires: 7 });
+
+                $.ajax({
+                    url: '/rest-auth/user/',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {'token': token},
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('Authorization', 'Token ' + token);
+                    },
+                    success: function(response){
+                        self.set('user.username', response.username);
+                        self.set('user.isLogged', true);
+                        self.$.loginDialog.close();
+                    }
+                });
+            },
+
+            ready: function(){
+                var self = this;
+
+                // login form
+                var form = this.$.loginForm;
+
+                form.addEventListener('iron-form-error', function(event){
+                    alert('Login/username invalid')
+                });
+
+                form.addEventListener('iron-form-response', function(event){
+                    self.set('authToken', event.detail.response.key);
+                });
+
+                form.querySelector('.submit').addEventListener('click', function(){
+                    form.submit();
+                });
+
+                // signup
+                form.querySelector('.signup').addEventListener('click', function(){
+                    self.$.loginDialog.close();
+                    self.$.signupDialogM.open();
+                });
+
+                this.$.signupDialogM.addEventListener('account-created', function(event){
+                    self.set('authToken', event.detail);
+                });
+            },
+
+            open: function(){
+                this.$.loginDialog.open();
+            }
+        });
+    </script>
+</dom-module>

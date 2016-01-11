@@ -1,0 +1,503 @@
+<!--
+    @license
+    Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+    This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+    The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+    The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+    Code distributed by Google as part of the polymer project is also
+    subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../bower_components/iron-icons/device-icons.html">
+
+<link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-date-picker/paper-date-picker.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+
+<link rel="import" href="login-dialog.html">
+<link rel="import" href="add-dialog.html">
+
+<!--
+    Extended Header + List Left + Card Over Toolbar
+-->
+<dom-module id="x-app">
+
+    <link rel="import" type="css" href="x-app.css">
+
+    <template>
+        <login-dialog id="loginDialogM" csrfToken="{{csrfToken}}"></login-dialog>
+        <add-dialog id="addDialogM" csrfToken="{{csrfToken}}" authToken="{{authToken}}"></add-dialog>
+
+        <section onclick="clickHandler(event)">
+            <paper-drawer-panel id="drawerPanel" responsive-width="1024px" drawer-width="{{drawerWidth}}">
+
+                <paper-header-panel class="list-panel" drawer mode="seamed">
+
+                    <!-- List Toolbar -->
+                    <paper-toolbar class$="horizontal layout wrap">
+                        <paper-button on-click="login" class="flex-3" style="text-align:left">
+                            <iron-icon icon="account-circle"></iron-icon>
+                            {{userLabel}}
+                        </paper-button>
+                        <paper-button on-click="viewHistory" style="text-align:right" class="flex-1">
+                            <iron-icon icon="history"></iron-icon>
+                        </paper-button>
+                        <paper-button on-click="addTrack" style="text-align:right" class="flex-1">
+                            <iron-icon icon="add"></iron-icon>
+                        </paper-button>
+                    </paper-toolbar>
+
+                    <!-- Filter -->
+                    <paper-dialog id="pickDateDialog" class="paper-date-picker-dialog" on-iron-overlay-closed="dismissDialog">
+                        <paper-date-picker id="picker" date="[[date]]"></paper-date-picker>
+                    </paper-dialog>
+
+                    <div class="layout horizontal">
+                        <div class=flex style="text-align:left;padding:0 4px">
+                            <paper-input label="date from" value="{{formatDate(filter.dateFrom)}}" on-click="selectFilter" name="filter.dateFrom">
+                                <iron-icon icon="today" prefix></iron-icon>
+                            </paperinput>
+                        </div>
+                        <div class=flex style="text-align:left;padding:0 4px">
+                            <paper-input label="date to" value="{{formatDate(filter.dateTo)}}" on-click="selectFilter" name="filter.dateTo">
+                                <iron-icon icon="today" prefix></iron-icon>
+                            </paperinput>
+                        </div>
+                    </div>
+
+                    <!-- List -->
+                    <paper-menu id=trackList class="list" on-iron-activate="_listTap">
+                        <template is="dom-repeat" items="{{ tracks }}">
+                            <paper-item class="layout horizontal wrap">
+                                <div class=flex>
+                                    <iron-icon icon="maps:directions-run"></iron-icon>
+                                    {{computeDistance(item.distance)}} km ● {{computeAvgSpeed(item.distance, item.time)}} km/h
+                                </div>
+                                <div>
+                                    {{item.date}}
+                                </div>
+                            </paper-item>
+                        </template>
+                    </paper-menu>
+
+                </paper-header-panel>
+
+                <paper-header-panel class="main-panel" main mode="{{mainMode}}">
+
+                    <!-- Main Toolbar -->
+                    <paper-toolbar class$="{{toolbarClass}}">
+                        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                    </paper-toolbar>
+
+                    <div class="content">
+
+                        <paper-material>
+                            <template is="dom-if" if="{{_cmp(view.name, 'track-detail')}}">
+                                <paper-card heading="Track Entry" elevation=0>
+                                    <div class="card-content">
+                                        <paper-card heading="Date">
+                                            <div class="card-content">
+                                                {{view.data.date}}
+                                            </div>
+                                        </paper-card>
+                                        <paper-card heading="Time">
+                                            <div class="card-content">
+                                                {{view.data.time}}
+                                            </div>
+                                        </paper-card>
+                                        <paper-card heading="Distance">
+                                            <div class="card-content">
+                                                {{view.data.distance}} km
+                                            </div>
+                                        </paper-card>
+                                        <paper-card heading="Average Speed">
+                                            <div class="card-content">
+                                                {{computeAvgSpeed(view.data.distance, view.data.time)}} km/h
+                                            </div>
+                                        </paper-card>
+                                    </div>
+                                    <div class="card-actions">
+                                        <paper-button on-click="updateTrack"><iron-icon icon="create"></iron-icon> Edit</paper-button>
+                                        <paper-button on-click="removeTrack"><iron-icon icon="close"></iron-icon> Remove</paper-button>
+                                    </div>
+                                </paper-card>
+                            </template>
+
+                            <template is="dom-if" if="{{_cmp(view.name, 'weekly-report')}}">
+                                <paper-card heading="Weekly Report" elevation=0 style="width:100%">
+                                    <div class="card-content">
+                                        <div class="layout horizontal">
+                                            <div style="text-align:left;padding:0 4px">
+                                                <paper-input label="date from" value="{{formatDate(reportFilter.dateFrom)}}" on-click="selectFilter" name="reportFilter.dateFrom">
+                                                    <iron-icon icon="today" prefix></iron-icon>
+                                                </paperinput>
+                                            </div>
+                                            <div style="text-align:left;padding:0 4px">
+                                                <paper-input label="date to" value="{{formatDate(reportFilter.dateTo)}}" on-click="selectFilter" name="reportFilter.dateTo">
+                                                    <iron-icon icon="today" prefix></iron-icon>
+                                                </paperinput>
+                                            </div>
+                                        </div>
+                                        <br><br>
+                                        <table width="100%">
+                                            <thead>
+                                                <tr>
+                                                    <th align=right>Week start</th>
+                                                    <th align=right>Week end</th>
+                                                    <th align=right>Average speed</th>
+                                                    <th align=right>Average distance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template is="dom-repeat" items="{{ weeklyReport }}">
+                                                    <tr>
+                                                        <td align=right>{{formatDate(item.date_start)}}</td>
+                                                        <td align=right>{{formatDate(item.date_end)}}</td>
+                                                        <td align=right>{{item.avg_speed}} km/h</td>
+                                                        <td align=right>{{item.avg_distance}} km</td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </paper-card>
+                            </template>
+                        </paper-material>
+
+                    </div>
+
+                </paper-header-panel>
+
+            </paper-drawer-panel>
+
+            <iron-media-query query="(max-width: 780px)" query-matches="{{_isMobile}}"></iron-media-query>
+        </section>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'x-app',
+
+            properties: {
+                _isMobile: {
+                    type: Boolean,
+                    observer: '_isMobileChanged'
+                },
+
+                csrfToken: String,
+
+                authToken: {
+                    type: String,
+                    value: Cookies.get('auth-token')
+                },
+
+                activeFilter: {
+                    type: String,
+                    value: 'filter.dateFrom'
+                },
+
+                filter: {
+                    type: Object,
+                    value: {
+                        dateFrom: new Date((new Date()).setDate((new Date()).getDate() - 5)),
+                        dateTo: new Date()
+                    }
+                },
+
+                reportFilter: {
+                    type: Object,
+                    value: {
+                        dateFrom: new Date((new Date()).getFullYear(), (new Date()).getMonth(), 1),
+                        dateTo: new Date((new Date()).getFullYear(), (new Date()).getMonth()+1, 0)
+                    }
+                },
+
+                weeklyReport: Array,
+
+                view: {
+                    type: Object,
+                    value: {
+                        name: null
+                    }
+                },
+
+                userLabel: {
+                    type: String,
+                    value: 'Login'
+                },
+
+                tracks: {
+                    type: Array
+                }
+            },
+
+            formatDate: function(date) {
+                return this.$.picker.dateFormat(date, 'Y-M-D');
+            },
+
+            _cmp: function(name, check) {
+                return name == check;
+            },
+
+            computeDistance: function(dist) {
+                return Math.round(dist * 100) / 100;
+            },
+
+            computeAvgSpeed: function(dist,time) {
+                if ( ! dist || ! time)
+                    return 0;
+
+                var time = time.split(':').map(parseFloat),
+                    h = time[0], m = time[1], s = time[2],
+                    secs = (h * 3600) + (m * 60) + s,
+                    dist = dist * 1000;
+
+                return Math.round(((dist / secs) * 3.6) * 100) / 100;
+            },
+
+            selectFilter: function(event) {
+                var dialog = this.$.pickDateDialog;
+                this.set('activeFilter', event.currentTarget.name);
+                this.$.picker.set('date', this.get(event.currentTarget.name))
+                dialog.open();
+            },
+
+            _listTap: function(event) {
+                this.loadTrack(event.detail.selected);
+            },
+
+            _isMobileChanged: function(isMobile) {
+                this.mainMode = isMobile ? 'seamed' : 'cover';
+                this.drawerWidth = isMobile ? '100%' : '320px';
+                this.toolbarClass = isMobile ? '' : 'tall';
+                this.updateStyles();
+            },
+
+            loadTrack: function(idx) {
+                var obj = this.tracks[idx];
+
+                obj['_index'] = idx;
+
+                this.set('view.data', obj);
+                this.set('view.name', 'track-detail');
+                //this.$.drawerPanel.closeDrawer();
+            },
+
+            loadTracks: function(){
+                var self = this;
+
+                $.ajax({
+                    url: '/rest-track/',
+                    data: {
+                        'dateFrom': this.formatDate(this.filter.dateFrom),
+                        'dateTo': this.formatDate(this.filter.dateTo)
+                    },
+                    method: 'GET',
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('Authorization', 'Token ' + self.authToken);
+                    },
+                    success: function(response){
+                        self.set('tracks', response);
+                        if (response.length > 0) {
+                            self.$.trackList.select(0);
+                            self.loadTrack(0);
+                        }
+                    }
+                });
+            },
+
+            addTrack: function() {
+                if ( ! this.$.loginDialogM.get('user.isLogged')) {
+                    alert('You must be logged in');
+                } else {
+                    var dialog = this.$.addDialogM;
+
+                    dialog.set('h', 0);
+                    dialog.set('m', 0);
+                    dialog.set('s', 0);
+                    dialog.set('date', new Date());
+                    dialog.set('distance', 0);
+                    dialog.set('url', '/rest-track/');
+                    dialog.set('_index', 0);
+                    dialog.set('_httpMethod', 'POST');
+                    dialog.open();
+                }
+            },
+
+            updateTrack: function(event) {
+                var item = event.model.view.data,
+                    dialog = this.$.addDialogM;
+                    dateSplit = item.date.split('-'),
+                    dateY = dateSplit[0], dateM = dateSplit[1], dateD = dateSplit[2],
+                    date = new Date(dateY, dateM-1, dateD),
+                    timeSplit = item.time.split(':'),
+                    timeH = timeSplit[0], timeM = timeSplit[1], timeS = timeSplit[2];
+
+                dialog.set('h', timeH);
+                dialog.set('m', timeM);
+                dialog.set('s', timeS);
+                dialog.set('date', date);
+                dialog.set('distance', item.distance);
+                dialog.set('url', '/rest-track/update/'+item.pk+'/');
+                dialog.set('_index', item._index);
+                dialog.set('_httpMethod', 'PUT');
+                dialog.open();
+            },
+
+            removeTrack: function(event) {
+                var self = this;
+
+                $.ajax({
+                    url: '/rest-track/destroy/'+event.model.view.data.pk+'/',
+                    method: 'DELETE',
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('Authorization', 'Token ' + self.authToken);
+                    },
+                    success: function(response){
+                        self.set('view.name', null);
+                        self.splice('tracks', event.model.view.data._index, 1);
+                        if (self.tracks.length > 0)
+                            self.loadTrack(0);
+                    }
+                });
+            },
+
+            viewHistory: function() {
+                if ( ! this.$.loginDialogM.get('user.isLogged')) {
+                    alert('You must be logged in');
+                    return;
+                }
+
+                var self = this;
+
+                this.set('view.name', 'weekly-report');
+
+                $.ajax({
+                    url: '/rest-track/report/weekly/',
+                    data: {
+                        'dateFrom': this.formatDate(this.reportFilter.dateFrom),
+                        'dateTo': this.formatDate(this.reportFilter.dateTo)
+                    },
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader('Authorization', 'Token ' + self.authToken);
+                    },
+                    success: function(response){
+                        self.set('weeklyReport', response);
+                    }
+                });
+            },
+
+            login: function() {
+                if ( ! this.$.loginDialogM.get('user.isLogged')) {
+                    this.$.loginDialogM.open();
+                } else {
+                    if (confirm('Would you like to logout?')) {
+                        var self = this;
+
+                        $.ajax({
+                            url: '/rest-auth/logout/',
+                            method: 'POST',
+                            dataType: 'json',
+                            beforeSend: function(xhr) {
+                                xhr.setRequestHeader('Authorization', 'Token ' + self.authToken);
+                            },
+                            success: function(){
+                                Cookies.remove('auth-token');
+
+                                self.$.loginDialogM.set('user.isLogged', false);
+
+                                self.set('userLabel', 'Login');
+                                self.set('authToken', undefined);
+                                self.set('tracks', []);
+                                self.set('view.name', null);
+                            }
+                        });
+                    }
+                }
+            },
+
+            authorizationHeaders: function(token) {
+                return {'Authorization': 'Token ' + token}
+            },
+
+            ready: function(){
+                var self = this;
+
+                // after user login
+                this.$.loginDialogM.addEventListener('user-changed', function(){
+                    var userLabel = self.$.loginDialogM.get('user.username');
+                    
+                    if (userLabel.length > 4) {
+                        userLabel = userLabel.substr(0,4) + '...';
+                    }
+
+                    self.set('authToken', self.$.loginDialogM.get('authToken'));
+                    self.set('userLabel', userLabel);
+
+                    self.loadTracks();
+                });
+
+                // track added
+                this.$.addDialogM.addEventListener('track-added', function(event){
+                    if (event.detail.index == 0)
+                        self.unshift('tracks', event.detail.track);
+                    else
+                        self.splice('tracks', event.detail.index, 1, event.detail.track);
+                    setTimeout(function(){
+                        self.$.trackList.select(event.detail.index);
+                        self.loadTrack(event.detail.index);
+                    }, 10);
+                });
+
+                // filter date picker
+                var dateDialog = self.$.pickDateDialog,
+                    picker = self.$.picker;
+
+                picker.addEventListener('date-changed', function(event){
+                    self.set(self.activeFilter, event.detail.value);
+                    dateDialog.close();
+
+                    if (/reportFilter/.test(self.activeFilter)) {
+                        self.viewHistory();
+                    }
+                    else {
+                        self.loadTracks();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <script>
+        function clickHandler(e) {
+            var button = e.target;
+            while (!button.hasAttribute('data-dialog') && button !== document.body) {
+                button = button.parentElement;
+            }
+            if (!button.hasAttribute('data-dialog')) {
+                return;
+            }
+            var id = button.getAttribute('data-dialog');
+            var dialog = document.getElementById(id);
+            if (dialog) {
+                dialog.open();
+            }
+        }
+    </script>
+
+</dom-module>

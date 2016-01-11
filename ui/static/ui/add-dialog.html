@@ -1,0 +1,125 @@
+<dom-module id="add-dialog">
+    <template>
+        <paper-dialog id="addDialog">
+            <h2>Track your time</h2>
+
+            <form is="iron-form" id="addForm" method="post" action="{{url}}">
+                <input type=hidden name=csrfmiddlewaretoken value="{{csrfToken}}">
+
+                <label>Date</label>
+                <paper-input name=date value="{{formatDate(date)}}" class="pick-date"></paper-input>
+
+                <br>
+                <label>Time</label>
+                <div class="layout horizontal wrap">
+                    <paper-input type="number" value="{{h}}" label="hours" name="h"></paper-input>
+                    <paper-input type="number" value="{{m}}" label="mins" name="m"></paper-input>
+                    <paper-input type="number" value="{{s}}" label="secs" name="s"></paper-input>
+                </div>
+
+                <br>
+                <label>Distance (in km)</label>
+                <paper-input type="number" value="{{distance}}" name="distance"></paper-input>
+
+                <br>
+                <paper-button raised class=submit>Submit</paper-button>
+
+                <button style="display:none"></button>
+            </form>
+        </paper-dialog>
+
+        <paper-dialog id="pickDateDialog" class="paper-date-picker-dialog" on-iron-overlay-closed="dismissDialog">
+            <paper-date-picker id="picker" date="[[date]]"></paper-date-picker>
+        </paper-dialog>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'add-dialog',
+
+            properties: {
+                csrfToken: String,
+
+                authToken: String,
+
+                date: {
+                    type: Date
+                },
+
+                user: {
+                    type: Object,
+                    value: {
+                        isLogged: false,
+                        username: null
+                    }
+                },
+
+                h: { type: Number, value: 0 },
+                m: { type: Number, value: 0 },
+                s: { type: Number, value: 0 },
+
+                distance: { type: Number, value: 0 },
+
+                _httpMethod: String,
+                _index: Number // track index
+            },
+
+            formatDate: function(date) {
+                return this.$.picker.dateFormat(date, 'Y-M-D');
+            },
+
+            ready: function(){
+                var self = this;
+
+                var form = this.$.addForm;
+
+                form.addEventListener('iron-form-presubmit', function(event){
+                    var body = form.serialize();
+
+                    body.time = [body.h, body.m, body.s].join(':');
+
+                    this.request.contentType = 'application/json';
+                    this.request.body = body;
+                    this.request.headers['Authorization'] = 'Token ' + self.authtoken;
+                    this.request.headers['X-Http-Method-Override'] = self._httpMethod;
+                });
+
+                form.addEventListener('iron-form-error', function(event){
+                    alert('You have invalid fields');
+                });
+
+                form.addEventListener('iron-form-response', function(event){
+                    self.fire('track-added', {
+                        track: event.detail.response,
+                        index: self._index
+                    });
+
+                    self.$.addDialog.close();
+                });
+
+                form.querySelector('.submit').addEventListener('click', function(){
+                    form.submit();
+                });
+
+                // date picker
+                var btn = form.querySelector('.pick-date');
+
+                btn.addEventListener('click', function(){
+                    var dateDialog = self.$.pickDateDialog,
+                        picker = self.$.picker;
+
+                    picker.addEventListener('date-changed', function(event){
+                        self.set('date', event.detail.value);
+                        dateDialog.close();
+                    });
+
+                    dateDialog.open();
+                });
+            },
+
+            open: function(){
+                this.$.addDialog.open();
+            }
+        });
+    </script>
+</dom-module>

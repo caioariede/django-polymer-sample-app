@@ -1,0 +1,64 @@
+<dom-module id="signup-dialog">
+    <template>
+        <paper-dialog id="signupDialog">
+            <h2>Create an account</h2>
+
+            <form is="iron-form" id="signupForm" method="post" action="/rest-auth/registration/">
+                <input type=hidden name=csrfmiddlewaretoken value="{{ csrfToken }}">
+                <paper-input name="username" label="Username" required></paper-input>
+                <paper-input name="password1" label="Password" required type="password"></paper-input>
+                <paper-input name="password2" label="Confirm password" required type="password"></paper-input>
+                <paper-input name="email" label="Email" required></paper-input>
+                <br>
+                <paper-button raised class=submit>Create</paper-button>
+                <button style="display:none"></button>
+            </form>
+        </paper-dialog>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'signup-dialog',
+
+            properties: {
+                csrfToken: String,
+
+                authToken: {
+                    type: String,
+                },
+
+                user: {
+                    type: Object,
+                    value: {
+                        isLogged: false,
+                        username: null
+                    }
+                }
+            },
+
+            ready: function(){
+                var self = this;
+
+                // login form
+                var form = this.$.signupForm;
+
+                form.addEventListener('iron-form-error', function(event){
+                    alert('Your form did not validate.\n\nPossible causes:\n\nuse of existing username;\npasswords are not matching;\ninvalid email address;\nuse of existing email address');
+                });
+
+                form.addEventListener('iron-form-response', function(event){
+                    self.$.signupDialog.close();
+                    self.fire('account-created', event.detail.response.key);
+                });
+
+                form.querySelector('.submit').addEventListener('click', function(){
+                    form.submit();
+                });
+            },
+
+            open: function(){
+                this.$.signupDialog.open();
+            }
+        });
+    </script>
+</dom-module>

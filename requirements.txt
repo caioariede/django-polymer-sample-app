@@ -1,0 +1,4 @@
+Django==1.9.1
+django-rest-auth==0.6.0
+django-allauth==0.24.1
+six==1.9.0
