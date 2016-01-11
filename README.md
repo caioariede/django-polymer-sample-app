@@ -34,3 +34,8 @@ REST API
 
 It's available in: http://localhost:port/rest-track/
 
+
+Screenshots
+-----------
+
+You can see some screenshots in the `screenshots` folder.
