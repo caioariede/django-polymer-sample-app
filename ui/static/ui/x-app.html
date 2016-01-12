@@ -333,7 +333,7 @@
                     dialog.set('date', new Date());
                     dialog.set('distance', 0);
                     dialog.set('url', '/rest-track/');
-                    dialog.set('_index', 0);
+                    dialog.set('_index', -1);
                     dialog.set('_httpMethod', 'POST');
                     dialog.open();
                 }
@@ -454,10 +454,11 @@
 
                 // track added
                 this.$.addDialogM.addEventListener('track-added', function(event){
-                    if (event.detail.index == 0)
+                    if (event.detail.index == -1)
                         self.unshift('tracks', event.detail.track);
                     else
                         self.splice('tracks', event.detail.index, 1, event.detail.track);
+
                     setTimeout(function(){
                         self.$.trackList.select(event.detail.index);
                         self.loadTrack(event.detail.index);
