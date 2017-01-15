@@ -22,18 +22,7 @@ SECRET_KEY = 'ma3c@7uu!%e0=tynp+i6+q%$)9v@$t(eulqurym_b=48z82&5n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
-
 ALLOWED_HOSTS = []
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    "django.core.context_processors.request",
-
-    # Disabling due to alluth>=0.21.0 changes
-    # "allauth.account.context_processors.account",
-    # "allauth.socialaccount.context_processors.socialaccount",
-)
 
 # Application definition
 
@@ -107,7 +96,37 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                # Insert your TEMPLATE_CONTEXT_PROCESSORS here or use this
+                # list if you haven't customized them:
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+        'DEBUG': True,
+        'CONTEXT_PROCESSORS': (
+            'django.contrib.auth.context_processors.auth',
+            "django.core.context_processors.request",
+
+            # Disabling due to alluth>=0.21.0 changes
+            # "allauth.account.context_processors.account",
+            # "allauth.socialaccount.context_processors.socialaccount",
+        ),
+    },
+]
 
 REST_SESSION_LOGIN = False
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
