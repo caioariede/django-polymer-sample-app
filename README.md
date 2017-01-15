@@ -24,6 +24,10 @@ You must create a superuser:
 
     python manage.py createsuperuser
 
+Start the server:
+
+    python manage.py runserver
+
 Then access:
 
     http://localhost:port/admin/
